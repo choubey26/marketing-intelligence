@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #374151;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .header-content h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-content p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-glow {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            color: white;
+            box-shadow: 0 8px 25px rgba(55, 65, 81, 0.25);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(55, 65, 81, 0.35);
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-left: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #dc2626;
+            text-align: center;
+            padding: 2rem;
+            background: #fef2f2;
+            border-radius: 1rem;
+            margin: 2rem 0;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab:hover:not(.active) {
+            background: #f9fafb;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, white, #f9fafb);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-details h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .kpi-change.positive {
+            color: #059669;
+        }
+
+        .kpi-change.negative {
+            color: #dc2626;
+        }
+
+        .kpi-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover .kpi-icon {
+            transform: scale(1.1);
+        }
+
+        .kpi-icon i {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .chart-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Channel Table */
+        .channel-table {
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .channel-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .channel-table th {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 1.5rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .channel-table td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.2s ease;
+        }
+
+        .channel-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        .channel-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.75rem;
+        }
+
+        /* Campaign Cards */
+        .campaign-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .campaign-list {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .campaign-item {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .campaign-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .campaign-rank {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .campaign-metrics {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .metric-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .campaign-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>Marketing Dashboard</h1>
+            <p>Real-time marketing performance and analytics</p>
+        </div>
+        <div class="header-buttons">
+            <button class="btn-glow btn-primary" onclick="setDateRange(7)">
+                <i data-feather="calendar"></i>
+                Last 7 Days
+            </button>
+            <button class="btn-glow btn-secondary" onclick="setDateRange(30)">
+                <i data-feather="calendar"></i>
+                Last 30 Days
+            </button>
+            <button class="btn-glow btn-primary" onclick="setDateRange(60)">
+                <i data-feather="calendar"></i>
+                Last 60 Days
+            </button>
+            <button class="btn-glow btn-secondary" onclick="setDateRange(90)">
+                <i data-feather="calendar"></i>
+                Last 90 Days
+            </button>
+            <button class="btn-glow btn-primary" onclick="setDateRange(120)">
+                <i data-feather="calendar"></i>
+                Last 120 Days
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading dashboard data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="error hidden">
+        <h3>Unable to load dashboard data</h3>
+        <p id="error-message"></p>
+        <button class="btn-glow btn-primary" onclick="retryLoad()" style="margin-top: 1rem;">
+            <i data-feather="refresh-cw"></i>
+            Retry
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">Overview</button>
+            <button class="tab" onclick="showTab('channels')">Channels</button>
+            <button class="tab" onclick="showTab('campaigns')">Campaigns</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="fade-in">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-content">
+                        <div class="kpi-details">
+                            <h3>Marketing Investment</h3>
+                            <div class="kpi-value" id="total-spend">$0</div>
+                            <div class="kpi-change" id="spend-change">
+                                <i data-feather="trending-up"></i>
+                                0% vs last period
+                            </div>
+                        </div>
+                        <div class="kpi-icon">
+                            <i data-feather="dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-content">
+                        <div class="kpi-details">
+                            <h3>Revenue Generated</h3>
+                            <div class="kpi-value" id="total-revenue">$0</div>
+                            <div class="kpi-change" id="revenue-change">
+                                <i data-feather="trending-up"></i>
+                                0% vs last period
+                            </div>
+                        </div>
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                            <i data-feather="trending-up"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-content">
+                        <div class="kpi-details">
+                            <h3>Return on Ad Spend</h3>
+                            <div class="kpi-value" id="total-roas">0x</div>
+                            <div class="kpi-change" id="roas-change">
+                                <i data-feather="trending-down"></i>
+                                0% vs last period
+                            </div>
+                        </div>
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #a855f7, #ec4899);">
+                            <i data-feather="target"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-content">
+                        <div class="kpi-details">
+                            <h3>Total Orders</h3>
+                            <div class="kpi-value" id="total-orders">0</div>
+                            <div class="kpi-change" id="orders-change">
+                                <i data-feather="trending-up"></i>
+                                0% vs last period
+                            </div>
+                        </div>
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                            <i data-feather="shopping-cart"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <i data-feather="bar-chart-2" style="color: #8b5cf6;"></i>
+                        <h3>Performance Trends</h3>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <i data-feather="pie-chart" style="color: #8b5cf6;"></i>
+                        <h3>Channel Distribution</h3>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="channelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <i data-feather="target" style="color: #8b5cf6;"></i>
+                        <h3>Business Impact Metrics</h3>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="businessChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <i data-feather="activity" style="color: #8b5cf6;"></i>
+                        <h3>ROAS by Channel</h3>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="roasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Channels Tab -->
+        <div id="channels-tab" class="hidden fade-in">
+            <div class="channel-table">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Channel</th>
+                        <th style="text-align: right;">Investment</th>
+                        <th style="text-align: right;">Revenue</th>
+                        <th style="text-align: right;">ROAS</th>
+                        <th style="text-align: right;">CTR</th>
+                        <th style="text-align: right;">CPC</th>
+                    </tr>
+                    </thead>
+                    <tbody id="channel-table-body">
+                    <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Campaigns Tab -->
+        <div id="campaigns-tab" class="hidden fade-in">
+            <div class="campaign-grid">
+                <div class="campaign-list">
+                    <div class="chart-header">
+                        <i data-feather="award" style="color: #059669;"></i>
+                        <h3>Top Performing Campaigns</h3>
+                    </div>
+                    <div id="top-campaigns">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <div class="campaign-list">
+                    <div class="chart-header">
+                        <i data-feather="alert-circle" style="color: #dc2626;"></i>
+                        <h3>Campaigns Needing Attention</h3>
+                    </div>
+                    <div id="bottom-campaigns">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration
+    const API_BASE_URL = 'http://localhost:8080/api/dashboard';
+    let currentDateRange = 7;
+    let charts = {};
+    let dashboardData = null;
+
+    // Initialize the dashboard
+    async function initDashboard() {
+        feather.replace();
+        await loadDashboardData();
+    }
+
+    // Load data from backend
+    async function loadDashboardData() {
+        try {
+            showLoading();
+
+            const response = await fetch(`${API_BASE_URL}/overview?days=${currentDateRange}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            dashboardData = await response.json();
+
+            hideLoading();
+            showMainContent();
+            updateKPIs();
+            initCharts();
+            feather.replace();
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            showError(error.message);
+        }
+    }
+
+    // Load channel data
+    async function loadChannelData() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/channels?days=${currentDateRange}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const channelData = await response.json();
+            updateChannelTable(channelData);
+
+        } catch (error) {
+            console.error('Error loading channel data:', error);
+        }
+    }
+
+    // Load campaign data
+    async function loadCampaignData() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/campaigns?days=${currentDateRange}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const campaignData = await response.json();
+            updateCampaignLists(campaignData);
+
+        } catch (error) {
+            console.error('Error loading campaign data:', error);
+        }
+    }
+
+    // UI State Management
+    function showLoading() {
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('error').classList.add('hidden');
+        document.getElementById('main-content').classList.add('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').classList.add('hidden');
+    }
+
+    function showError(message) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+        document.getElementById('main-content').classList.add('hidden');
+        document.getElementById('error-message').textContent = message;
+    }
+
+    function showMainContent() {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+    }
+
+    // Update KPI cards
+    function updateKPIs() {
+        if (!dashboardData || !dashboardData.kpis) return;
+
+        const kpis = dashboardData.kpis;
+
+        document.getElementById('total-spend').textContent = `$${Math.round(kpis.totalSpend || 0).toLocaleString()}`;
+        document.getElementById('total-revenue').textContent = `$${Math.round(kpis.totalRevenue || 0).toLocaleString()}`;
+        document.getElementById('total-roas').textContent = `${(kpis.totalRoas || 0).toFixed(2)}x`;
+        document.getElementById('total-orders').textContent = (kpis.totalOrders || 0).toLocaleString();
+
+        // Update change indicators
+        updateChangeIndicator('spend-change', kpis.spendChangePercent);
+        updateChangeIndicator('revenue-change', kpis.revenueChangePercent);
+        updateChangeIndicator('roas-change', kpis.roasChangePercent);
+        updateChangeIndicator('orders-change', kpis.ordersChangePercent);
+    }
+
+    function updateChangeIndicator(elementId, changePercent) {
+        const element = document.getElementById(elementId);
+        const change = parseFloat(changePercent || '0');
+        const isPositive = change >= 0;
+
+        element.className = `kpi-change ${isPositive ? 'positive' : 'negative'}`;
+        element.innerHTML = `
+                <i data-feather="${isPositive ? 'trending-up' : 'trending-down'}"></i>
+                ${Math.abs(change).toFixed(1)}% vs last period
+            `;
+    }
+
+    // Initialize charts
+    function initCharts() {
+        if (!dashboardData) return;
+
+        // Performance Chart
+        const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+        const performanceData = dashboardData.performanceTrends || [];
+
+        if (charts.performance) charts.performance.destroy();
+        charts.performance = new Chart(performanceCtx, {
+            type: 'line',
+            data: {
+                labels: performanceData.map(d => d.date),
+                datasets: [{
+                    label: 'Marketing Spend',
+                    data: performanceData.map(d => d.spend),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Revenue Generated',
+                    data: performanceData.map(d => d.revenue),
+                    borderColor: '#059669',
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.1)' } },
+                    x: { grid: { color: 'rgba(0, 0, 0, 0.1)' } }
+                }
+            }
+        });
+
+        // Channel Distribution Chart
+        const channelCtx = document.getElementById('channelChart').getContext('2d');
+        const channelData = dashboardData.channelDistribution || [];
+
+        if (charts.channel) charts.channel.destroy();
+        charts.channel = new Chart(channelCtx, {
+            type: 'doughnut',
+            data: {
+                labels: channelData.map(d => d.channel),
+                datasets: [{
+                    data: channelData.map(d => d.spend),
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(5, 150, 105, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(249, 115, 22, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // Business Impact Chart
+        const businessCtx = document.getElementById('businessChart').getContext('2d');
+        const businessData = dashboardData.businessMetrics || [];
+
+        if (charts.business) charts.business.destroy();
+        charts.business = new Chart(businessCtx, {
+            type: 'line',
+            data: {
+                labels: businessData.map(d => d.date),
+                datasets: [{
+                    label: 'Orders',
+                    data: businessData.map(d => d.orders),
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'New Customers',
+                    data: businessData.map(d => d.newCustomers),
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.1)' } }
+                }
+            }
+        });
+
+        // ROAS Chart
+        const roasCtx = document.getElementById('roasChart').getContext('2d');
+        const roasData = dashboardData.roasData || [];
+
+        if (charts.roas) charts.roas.destroy();
+        charts.roas = new Chart(roasCtx, {
+            type: 'bar',
+            data: {
+                labels: roasData.map(d => d.channel),
+                datasets: [{
+                    label: 'ROAS',
+                    data: roasData.map(d => d.roas),
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(5, 150, 105, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(249, 115, 22, 0.8)'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `ROAS: ${context.parsed.y.toFixed(2)}x`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'ROAS' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Update channel table
+    function updateChannelTable(channelData) {
+        const tbody = document.getElementById('channel-table-body');
+        tbody.innerHTML = '';
+
+        channelData.forEach(d => {
+            tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <span class="channel-indicator" style="background:${getChannelColor(d.channel)}"></span>
+                            ${d.channel}
+                        </td>
+                        <td style="text-align:right;">${Math.round(d.spend || 0).toLocaleString()}</td>
+                        <td style="text-align:right;">${Math.round(d.revenue || 0).toLocaleString()}</td>
+                        <td style="text-align:right;">${(d.roas || 0).toFixed(2)}x</td>
+                        <td style="text-align:right;">${(d.ctr || 0).toFixed(2)}%</td>
+                        <td style="text-align:right;">${(d.cpc || 0).toFixed(2)}</td>
+                    </tr>
+                `;
+        });
+    }
+
+    // Update campaign lists
+    function updateCampaignLists(campaignData) {
+        // Sort campaigns by ROAS
+        const sortedCampaigns = [...campaignData].sort((a, b) => b.roas - a.roas);
+        const top = sortedCampaigns.slice(0, 5);
+        const bottom = sortedCampaigns.slice(-5).reverse();
+
+        // Render top campaigns
+        const topDiv = document.getElementById('top-campaigns');
+        topDiv.innerHTML = '';
+        top.forEach((c, i) => {
+            topDiv.innerHTML += `
+                    <div class="campaign-item">
+                        <div class="campaign-header">
+                            <span class="campaign-rank">${i + 1}</span>
+                            <span class="badge badge-success">Top</span>
+                        </div>
+                        <div><strong>${c.campaign.replace(/_/g, ' ')}</strong> (${c.channel})</div>
+                        <div class="campaign-metrics">
+                            <span class="metric-badge" style="background:#e0e7ff;color:#3730a3;">ROAS: ${c.roas.toFixed(2)}x</span>
+                            <span class="metric-badge" style="background:#d1fae5;color:#065f46;">Revenue: ${Math.round(c.revenue).toLocaleString()}</span>
+                            <span class="metric-badge" style="background:#fee2e2;color:#991b1b;">Spend: ${Math.round(c.spend).toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+        });
+
+        // Render bottom campaigns
+        const bottomDiv = document.getElementById('bottom-campaigns');
+        bottomDiv.innerHTML = '';
+        bottom.forEach((c, i) => {
+            bottomDiv.innerHTML += `
+                    <div class="campaign-item">
+                        <div class="campaign-header">
+                            <span class="campaign-rank">${i + 1}</span>
+                            <span class="badge badge-warning">Attention</span>
+                        </div>
+                        <div><strong>${c.campaign.replace(/_/g, ' ')}</strong> (${c.channel})</div>
+                        <div class="campaign-metrics">
+                            <span class="metric-badge" style="background:#e0e7ff;color:#3730a3;">ROAS: ${c.roas.toFixed(2)}x</span>
+                            <span class="metric-badge" style="background:#d1fae5;color:#065f46;">Revenue: ${Math.round(c.revenue).toLocaleString()}</span>
+                            <span class="metric-badge" style="background:#fee2e2;color:#991b1b;">Spend: ${Math.round(c.spend).toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+        });
+    }
+
+    // Helper: Get channel color
+    function getChannelColor(channel) {
+        switch (channel) {
+            case 'Facebook': return '#3b82f6';
+            case 'Google': return '#059669';
+            case 'TikTok': return '#8b5cf6';
+            default: return '#f97316';
+        }
+    }
+
+    // Tab switching
+    async function showTab(tab) {
+        document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('[id$="-tab"]').forEach(div => div.classList.add('hidden'));
+
+        if (tab === 'overview') {
+            document.querySelector('.tab:nth-child(1)').classList.add('active');
+            document.getElementById('overview-tab').classList.remove('hidden');
+        } else if (tab === 'channels') {
+            document.querySelector('.tab:nth-child(2)').classList.add('active');
+            document.getElementById('channels-tab').classList.remove('hidden');
+            await loadChannelData();
+        } else if (tab === 'campaigns') {
+            document.querySelector('.tab:nth-child(3)').classList.add('active');
+            document.getElementById('campaigns-tab').classList.remove('hidden');
+            await loadCampaignData();
+        }
+    }
+
+    // Date range switching
+    async function setDateRange(days) {
+        currentDateRange = days;
+        await loadDashboardData();
+
+        // Update active tab data if needed
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab.textContent === 'Channels') {
+            await loadChannelData();
+        } else if (activeTab.textContent === 'Campaigns') {
+            await loadCampaignData();
+        }
+    }
+
+    // Retry loading
+    async function retryLoad() {
+        await loadDashboardData();
+    }
+
+    // On load
+    window.onload = initDashboard;
+</script>
+</body>
+</html>
